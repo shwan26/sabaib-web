@@ -1,37 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SabaiB Web
 
-## Getting Started
+Next.js guest experience for bills created by the SabaiB Android app. Android and web share the same Supabase Postgres tables and naming contract.
 
-First, run the development server:
+## Shared model mapping
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+| Android model | Database representation |
+| --- | --- |
+| `Bill` | `bills` |
+| `ReceiptItem` | `bill_items` (`thai_name`, `english_name`, unit `price`) |
+| `Participant` | `participants` (`is_host`, `is_ready`) |
+| `ItemSelection` | normalized rows in `item_claims` |
+| `ChargeConfig` | charge fields on `bills` |
+| `ParticipantSplit` / `ParticipantTotal` | calculated from items and claims |
+
+`item total = price × quantity`, matching `BillViewModel` on Android.
+
+## Supabase setup
+
+1. Create a Supabase project.
+2. In Supabase **SQL Editor**, create the dedicated Prisma role recommended by Supabase. Replace the password first:
+
+```sql
+create user "prisma" with password 'REPLACE_WITH_A_STRONG_PASSWORD' bypassrls createdb;
+grant "prisma" to "postgres";
+grant usage, create on schema public to prisma;
+grant all on all tables in schema public to prisma;
+grant all on all routines in schema public to prisma;
+grant all on all sequences in schema public to prisma;
+alter default privileges for role postgres in schema public grant all on tables to prisma;
+alter default privileges for role postgres in schema public grant all on routines to prisma;
+alter default privileges for role postgres in schema public grant all on sequences to prisma;
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Copy `.env.example` to `.env` and replace every placeholder. Use the transaction pooler URL (port `6543`) for `DATABASE_URL`; use the session pooler or direct URL for `DIRECT_URL`.
+4. Apply the checked-in database migration:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm db:deploy
+pnpm db:generate
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Run `supabase/enable-realtime.sql` once in the Supabase SQL Editor. Publication ownership prevents this administrator-only operation from belonging in the Prisma migration.
+6. Start the app:
 
-## Learn More
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+The migration creates the four shared tables, constraints, and read-only guest RLS policies. Guest writes go through authenticated Next.js API handlers using an HTTP-only random token; the Prisma database password is never sent to the browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If environment values are absent or still placeholders, `/join/B7X2KP` intentionally uses the local demo bill.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Database commands
 
-## Deploy on Vercel
+```bash
+pnpm db:generate       # regenerate the typed Prisma client
+pnpm db:migrate --name change_name
+pnpm db:deploy         # apply committed migrations in deployment
+pnpm db:studio
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Verification
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# sabaib-web
+```bash
+pnpm lint
+pnpm build --webpack
+```
