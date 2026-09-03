@@ -42,17 +42,19 @@ model Bill {
 }
 
 model Participant {
-  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  billId     String      @map("bill_id") @db.Uuid
-  user_id    String?     @db.Uuid
-  name       String
-  avatar_url String?
-  role       String      @default("member")
-  joinedAt   DateTime    @default(now()) @map("joined_at") @db.Timestamptz(6)
-  claims     ItemClaim[]
-  bill       Bill        @relation(fields: [billId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users      users?      @relation(fields: [user_id], references: [id], onUpdate: NoAction)
-  payments   payments[]
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  billId         String      @map("bill_id") @db.Uuid
+  user_id        String?     @db.Uuid
+  name           String
+  avatar_url     String?
+  role           String      @default("member")
+  isReady        Boolean     @default(false) @map("is_ready")
+  guestTokenHash String?     @unique(map: "participants_guest_token_hash_key") @map("guest_token_hash") @db.VarChar(64)
+  joinedAt       DateTime    @default(now()) @map("joined_at") @db.Timestamptz(6)
+  claims         ItemClaim[]
+  bill           Bill        @relation(fields: [billId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users?      @relation(fields: [user_id], references: [id], onUpdate: NoAction)
+  payments       payments[]
 
   @@index([billId], map: "idx_participants_bill")
   @@index([user_id], map: "idx_participants_user")

@@ -7,6 +7,7 @@ import {
   baht,
   calculateParticipantTotal,
   claimsForItem,
+  demoBill,
   itemTotal,
 } from "@/lib/demo-bill";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -32,6 +33,7 @@ function itemLabel(item: BillItem) { return item.englishName || item.thaiName ||
 export default function BillExperience({ code, step }: { code: string; step: Step }) {
   const router = useRouter();
   const normalizedCode = code.toUpperCase();
+  const isDemo = normalizedCode === demoBill.code;
   const [session, setSession] = useState<Session>(emptySession);
   const [bundle, setBundle] = useState<BillBundle | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -104,8 +106,8 @@ export default function BillExperience({ code, step }: { code: string; step: Ste
     router.push(`/bill/${normalizedCode}`);
   }
 
-  function beginDemoSplit() {
-    if (!bundle || bundle.source !== "demo") return;
+  function startDemoSplit() {
+    if (!bundle || !isDemo) return;
     setBundle({ ...bundle, bill: { ...bundle.bill, status: "splitting" } });
     router.push(`/bill/${normalizedCode}/split`);
   }
@@ -130,14 +132,14 @@ export default function BillExperience({ code, step }: { code: string; step: Ste
 
   if (!loaded) return <BillLoading />;
   if (notFound || !bundle) return <BillNotFound code={normalizedCode} />;
-  if (step !== "join" && !session.participant) return <JoinScreen code={normalizedCode} restaurantName={bundle.bill.restaurantName} onJoin={join} />;
+  if (step !== "join" && !session.participant) return <JoinScreen code={normalizedCode} restaurantName={bundle.bill.restaurantName} isDemo={isDemo} onJoin={join} />;
 
   const { bill, participants, items, claims } = bundle;
   return (
     <div className="app-shell">
       <AppHeader code={normalizedCode} participant={session.participant} />
-      {step === "join" && <JoinScreen code={normalizedCode} restaurantName={bill.restaurantName} onJoin={join} />}
-      {step === "room" && session.participant && <WaitingRoom bill={bill} participants={participants} participant={session.participant} isDemo={bundle.source === "demo"} onStart={beginDemoSplit} />}
+      {step === "join" && <JoinScreen code={normalizedCode} restaurantName={bill.restaurantName} isDemo={isDemo} onJoin={join} />}
+      {step === "room" && session.participant && <WaitingRoom bill={bill} participants={participants} participant={session.participant} isDemo={isDemo} onStart={startDemoSplit} />}
       {step === "split" && session.participant && <SplitScreen code={normalizedCode} bill={bill} participants={participants} items={items} baseClaims={claims} participant={session.participant} selectedIds={session.claimedItemIds} onToggle={toggleItem} onDone={finishClaiming} />}
       {step === "summary" && session.participant && <SummaryScreen code={normalizedCode} bill={bill} items={items} baseClaims={claims} participant={session.participant} selectedIds={session.claimedItemIds} onContinue={() => router.push(`/bill/${normalizedCode}/payment`)} />}
       {step === "payment" && session.participant && <PaymentScreen code={normalizedCode} bill={bill} items={items} baseClaims={claims} participants={participants} participant={session.participant} selectedIds={session.claimedItemIds} payment={session.payment} onPayment={(payment) => persistSession({ ...session, payment })} />}
@@ -149,7 +151,7 @@ function AppHeader({ code, participant }: { code: string; participant: Participa
   return <header className="app-header"><Link href="/" className="brand"><LogoMark /><span>SabaiB</span></Link><div className="header-meta"><span className="code-chip">Bill {code}</span>{participant && <span className="guest-avatar">{participant.name[0].toUpperCase()}</span>}</div></header>;
 }
 
-function JoinScreen({ code, restaurantName, onJoin }: { code: string; restaurantName: string; onJoin: (name: string) => Promise<void> }) {
+function JoinScreen({ code, restaurantName, isDemo, onJoin }: { code: string; restaurantName: string; isDemo: boolean; onJoin: (name: string) => Promise<void> }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -159,12 +161,20 @@ function JoinScreen({ code, restaurantName, onJoin }: { code: string; restaurant
     setPending(true); setError("");
     try { await onJoin(name); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not join this bill."); setPending(false); }
   }
-  return <main className="center-main"><section className="join-card"><div className="penguin-welcome"><LogoMark /><span>👋</span></div><p className="eyebrow">JOINING</p><h1>{restaurantName}</h1><p className="muted">You’ve been invited to split this bill.</p><div className="bill-code-panel"><small>Bill code</small><strong>{code}</strong></div><form onSubmit={submit} className="join-form" noValidate><label htmlFor="guest-name">Your name</label><input id="guest-name" value={name} onChange={(event) => { setName(event.target.value); setError(""); }} placeholder="e.g. Alex" autoComplete="name" autoFocus aria-describedby={error ? "name-error" : undefined} />{error && <p className="form-error" id="name-error">{error}</p>}<button className="primary-button" type="submit" disabled={pending}>{pending ? "Joining…" : <>Join bill <ArrowRightIcon /></>}</button></form><p className="privacy-note"><LockIcon /> No account or password needed.</p></section></main>;
+  return <main className="center-main"><section className="join-card"><div className="penguin-welcome"><LogoMark /><span>👋</span></div><p className="eyebrow">JOINING</p><h1>{restaurantName}</h1><p className="muted">You’ve been invited to split this bill.</p><div className="bill-code-panel"><small>Bill code</small><strong>{code}</strong></div><form onSubmit={submit} className="join-form" noValidate><label htmlFor="guest-name">Your name</label><input id="guest-name" value={name} onChange={(event) => { setName(event.target.value); setError(""); }} placeholder="e.g. Alex" autoComplete="name" autoFocus aria-describedby={error ? "name-error" : undefined} />{error && <p className="form-error" id="name-error">{error}</p>}<button className="primary-button" type="submit" disabled={pending}>{pending ? "Joining…" : <>Join bill <ArrowRightIcon /></>}</button></form>{!isDemo && <div className="join-alt"><span className="join-alt-divider">or</span><Link href="/login" className="join-alt-link">Sign in to keep a record of your bills</Link></div>}<p className="privacy-note"><LockIcon /> No account or password needed.</p></section></main>;
 }
 
 function WaitingRoom({ bill, participants, participant, isDemo, onStart }: { bill: Bill; participants: Participant[]; participant: Participant; isDemo: boolean; onStart: () => void }) {
   const host = participants.find((person) => person.isHost)?.name || "the host";
-  return <main className="page-main narrow-page"><section className="room-hero"><div className="pulse-mark"><UsersIcon /></div><p className="eyebrow">YOU’RE IN</p><h1>Waiting for the host</h1><p>We’ll move everyone to the items when {host} starts splitting.</p></section><section className="room-card"><div className="room-heading"><div><small>{bill.restaurantName}</small><h2>{participants.length} joined</h2></div><span className="live-pill"><i /> Live</span></div><div className="participant-list">{participants.map((person) => <div key={person.id}><span className="avatar">{person.name[0].toUpperCase()}</span><b>{person.name}{person.id === participant.id && <small> You</small>}</b>{person.isReady && <span className="ready-pill">Ready</span>}{person.isHost && <span className="host-pill">Host</span>}</div>)}</div></section>{isDemo && <><button className="primary-button demo-start" onClick={onStart}>Preview host starting split <ArrowRightIcon /></button><p className="demo-note">Demo control — with Supabase, this follows <code>bills.status</code> through Realtime.</p></>}</main>;
+
+  useEffect(() => {
+    if (!isDemo) return;
+    const timer = window.setTimeout(onStart, 2000);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDemo]);
+
+  return <main className="page-main narrow-page"><section className="room-hero"><div className="pulse-mark"><UsersIcon /></div><p className="eyebrow">YOU’RE IN</p><h1>Waiting for the host</h1><p>{isDemo ? `${host} is starting the split…` : `We’ll move everyone to the items when ${host} starts splitting.`}</p></section><section className="room-card"><div className="room-heading"><div><small>{bill.restaurantName}</small><h2>{participants.length} joined</h2></div><span className="live-pill"><i /> Live</span></div><div className="participant-list">{participants.map((person) => <div key={person.id}><span className="avatar">{person.name[0].toUpperCase()}</span><b>{person.name}{person.id === participant.id && <small> You</small>}</b>{person.isReady && <span className="ready-pill">Ready</span>}{person.isHost && <span className="host-pill">Host</span>}</div>)}</div></section>{isDemo && <button className="skip-wait" onClick={onStart}>Skip wait <ArrowRightIcon /></button>}</main>;
 }
 
 function useGuestClaims(participant: Participant, selectedIds: string[], baseClaims: ItemClaim[]) {

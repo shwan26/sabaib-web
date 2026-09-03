@@ -41,7 +41,8 @@ pnpm db:generate
 ```
 
 5. Run `supabase/enable-realtime.sql` once in the Supabase SQL Editor. Publication ownership prevents this administrator-only operation from belonging in the Prisma migration.
-6. Start the app:
+6. (Optional) Run `supabase/seed-demo.sql` to create the persistent demo bill (`B7X2KP`) in Supabase. This lets guests join the demo through the same database-backed flow.
+7. Start the app:
 
 ```bash
 pnpm dev
