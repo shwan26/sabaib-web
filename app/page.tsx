@@ -1,69 +1,139 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/Button'
+import { Input } from '@/components/Input'
+
+export default function HomePage() {
+  const router = useRouter()
+  const [billCode, setBillCode] = useState('')
+  const [error, setError] = useState('')
+
+  const handleJoinByCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (!billCode.trim()) {
+      setError('Please enter a bill code')
+      return
+    }
+
+    router.push(`/join/${billCode}`)
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🦉</span>
+            <h1 className="text-2xl font-bold text-yellow-500">SabaiB</h1>
+          </div>
+          <div className="flex gap-4">
+            <Link href="/auth/login">
+              <Button variant="secondary">Create Account</Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left Section */}
+          <div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">
+              Split the Bill,
+            </h2>
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">
+              Not the Mood!
+            </h2>
+
+            <h3 className="text-5xl font-bold text-yellow-500 mb-2">SabaiB</h3>
+            <p className="text-gray-600 text-lg mb-12">
+              will help you for fair bills.
+            </p>
+
+            {/* Just Curious Section */}
+            <div className="bg-white rounded-lg p-8 mb-6 shadow-md">
+              <h4 className="font-bold text-gray-900 mb-2 text-lg">
+                Just curious?
+              </h4>
+              <p className="text-gray-600 text-sm mb-6">
+                Try a live demo bill with sample friends and dishes—no code needed.
+              </p>
+              <Link href="/auth/signup">
+                <Button variant="primary" className="w-full">
+                  Try the demo bill →
+                </Button>
+              </Link>
+            </div>
+
+            {/* Have a Bill Code Section */}
+            <div className="bg-white rounded-lg p-8 shadow-md">
+              <h4 className="font-bold text-gray-900 mb-2 text-lg">
+                Have a bill code?
+              </h4>
+              <p className="text-gray-600 text-sm mb-6">
+                Your host shared a link or a 6-character code. Enter it to join.
+              </p>
+              <form onSubmit={handleJoinByCode} className="flex gap-2">
+                <Input
+                  placeholder="e.g. B7X2KP"
+                  value={billCode}
+                  onChange={(e) => setBillCode(e.target.value.toUpperCase())}
+                  className="uppercase"
+                />
+                <Button variant="primary" type="submit">
+                  Join →
+                </Button>
+              </form>
+              {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+            </div>
+          </div>
+
+          {/* Right Section - Invitation Card */}
+          <div className="flex justify-center">
+            <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl p-8 shadow-lg max-w-sm w-full border border-green-100">
+              <div className="text-center">
+                <p className="text-emerald-600 text-sm font-semibold mb-4 tracking-wide">
+                  YOU'RE INVITED TO
+                </p>
+
+                <div className="mb-8">
+                  <p className="text-3xl font-bold text-gray-900">
+                    Baan Suan
+                  </p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    Sathorn
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 mb-6 border-2 border-gray-200">
+                  <p className="text-xs text-gray-500 font-semibold mb-1">
+                    BILL CODE
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900 tracking-wider">
+                    B7X2KP
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-center gap-2 text-emerald-600 mb-8">
+                  <span>👥</span>
+                  <span className="font-semibold">3 friends joined</span>
+                </div>
+
+                <p className="text-sm text-gray-500">
+                  Waiting for you
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
-  );
+  )
 }
