@@ -4,12 +4,24 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
-import { Button } from '@/components/Button'
-import { Card } from '@/components/Card'
 import { Alert } from '@/components/Alert'
 import type { Database } from '@/lib/database.types'
 
 type Bill = Database['public']['Tables']['bills']['Row']
+
+function Icon({ name, className = '' }: { name: 'home' | 'groups' | 'user' | 'logout' | 'plus' | 'arrow'; className?: string }) {
+  const shared = { className, fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, viewBox: '0 0 24 24', 'aria-hidden': true }
+  if (name === 'home') return <svg {...shared}><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1Z" /></svg>
+  if (name === 'groups') return <svg {...shared}><rect x="3" y="4" width="18" height="15" rx="2" /><path d="M7 21h10M9 4V2h6v2" /></svg>
+  if (name === 'user') return <svg {...shared}><circle cx="12" cy="7" r="4" /><path d="M4 21c.8-4.1 3.4-6 8-6s7.2 1.9 8 6" /></svg>
+  if (name === 'logout') return <svg {...shared}><path d="M10 17l5-5-5-5M15 12H3" /><path d="M7 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" /></svg>
+  if (name === 'plus') return <svg {...shared}><path d="M12 5v14M5 12h14" /></svg>
+  return <svg {...shared}><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+}
+
+function formatMoney(amount: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount)
+}
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -19,6 +31,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [userName, setUserName] = useState('')
+  const [joinOpen, setJoinOpen] = useState(false)
+  const [joinCode, setJoinCode] = useState('')
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,98 +80,50 @@ export default function DashboardPage() {
     router.refresh()
   }
 
+  const joinBill = (event: React.FormEvent) => {
+    event.preventDefault()
+    const code = joinCode.trim()
+    if (code) router.push(`/join/${code}`)
+  }
+
   if (loading) {
     return (
-      <div className="text-center py-8">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-r-blue-600"></div>
-        <p className="text-gray-600 mt-2">Loading your bills...</p>
+      <div className="dashboard-loading">
+        <div className="dashboard-spinner" />
+        <p>Loading your workspace...</p>
       </div>
     )
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome, {userName}!
-          </h1>
-          <p className="text-gray-600 mt-1">Manage and share your bills</p>
-        </div>
-        <Button variant="secondary" onClick={handleLogout}>
-          Log Out
-        </Button>
-      </div>
+    <div className="dashboard-shell">
+      <aside className="dashboard-sidebar">
+        <Link href="/dashboard" className="dashboard-brand"><span>SabaiB</span><span className="brand-penguin">🐧</span></Link>
+        <nav className="dashboard-nav" aria-label="Dashboard navigation">
+          <Link href="/dashboard" className="dashboard-nav-link active"><Icon name="home" /> <span>Home</span></Link>
+          <a href="#active-bills" className="dashboard-nav-link"><Icon name="groups" /> <span>Groups</span></a>
+          <button type="button" className="dashboard-nav-link" onClick={handleLogout}><Icon name="user" /> <span>Profile</span></button>
+        </nav>
+        <button className="dashboard-logout" onClick={handleLogout}><Icon name="logout" /> Log out</button>
+      </aside>
 
-      {error && (
-        <div className="mb-6">
-          <Alert type="error" message={error} />
-        </div>
-      )}
-
-      {/* Create Bill Button */}
-      <div className="mb-8">
-        <Link href="/bills/new">
-          <Button className="w-full sm:w-auto">+ Create New Bill</Button>
-        </Link>
-      </div>
-
-      {/* Bills List */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Bills</h2>
-
-        {bills.length === 0 ? (
-          <Card>
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">
-                You haven't created any bills yet
-              </p>
-              <Link href="/bills/new">
-                <Button variant="primary">Create Your First Bill</Button>
-              </Link>
-            </div>
-          </Card>
-        ) : (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {bills.map((bill) => (
-              <Link key={bill.id} href={`/bills/${bill.id}`}>
-                <Card className="h-full">
-                  <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                    {bill.restaurant_name || 'Unnamed Bill'}
-                  </h3>
-
-                  <div className="space-y-2 mb-4">
-                    <p className="text-gray-600 text-sm">
-                      Total:{' '}
-                      <span className="font-semibold">
-                        {bill.total_amount} {bill.currency}
-                      </span>
-                    </p>
-                    <p className="text-gray-600 text-sm">
-                      Status:{' '}
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          bill.settled_at
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {bill.settled_at ? 'Settled' : bill.status}
-                      </span>
-                    </p>
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    Created{' '}
-                    {new Date(bill.created_at).toLocaleDateString()}
-                  </p>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      <main className="dashboard-main">
+        <header className="dashboard-topline"><p>Home</p><span className="dashboard-user">{userName}</span></header>
+        {error && <div className="mb-6"><Alert type="error" message={error} /></div>}
+        <section className="welcome-banner">
+          <div><p className="eyebrow">WELCOME BACK</p><h1>Hi, {userName || 'there'} <span>👋</span></h1><p className="welcome-copy">You have {bills.length} active {bills.length === 1 ? 'bill' : 'bills'} ready to split.</p></div>
+          <div className="welcome-actions"><Link href="/bills/new" className="create-bill-button"><Icon name="plus" /> Create bill</Link><button type="button" className="join-button" onClick={() => setJoinOpen(true)}>Join a bill</button></div>
+        </section>
+        <section id="active-bills" className="bills-section">
+          <div className="section-heading"><h2>Active groups</h2>{bills.length > 2 && <a href="#active-bills">See all <Icon name="arrow" /></a>}</div>
+          {bills.length === 0 ? (
+            <div className="empty-bills"><div className="empty-icon">⌁</div><h3>No active bills yet</h3><p>Create a bill for your group or join one with an invite code.</p><div><Link href="/bills/new" className="create-bill-button">Create bill</Link><button type="button" onClick={() => setJoinOpen(true)} className="text-join-button">Join a bill</button></div></div>
+          ) : (
+            <div className="bill-grid">{bills.map((bill) => <article key={bill.id} className="bill-card"><div className="bill-card-heading"><div><h3>{bill.restaurant_name || 'Untitled bill'}</h3><p>Code {bill.code || '—'}</p></div><span className={bill.settled_at ? 'status-pill settled' : 'status-pill'}>{bill.settled_at ? 'Settled' : 'Active'}</span></div><p className="bill-total">{formatMoney(bill.total_amount, bill.currency)} <small>total</small></p><Link href={`/bills/${bill.id}`} className="open-bill-button">Open</Link></article>)}</div>
+          )}
+        </section>
+      </main>
+      {joinOpen && <div className="join-modal-backdrop" role="presentation" onMouseDown={() => setJoinOpen(false)}><div className="join-modal" role="dialog" aria-modal="true" aria-labelledby="join-title" onMouseDown={(event) => event.stopPropagation()}><button className="modal-close" onClick={() => setJoinOpen(false)} aria-label="Close">×</button><p className="eyebrow">JOIN A BILL</p><h2 id="join-title">Have an invite code?</h2><p>Enter the code your friend shared to join their bill.</p><form onSubmit={joinBill}><label htmlFor="join-code">Bill code</label><input id="join-code" autoFocus placeholder="e.g. B7X2KP" value={joinCode} onChange={(event) => setJoinCode(event.target.value.toUpperCase())} /><button className="create-bill-button" type="submit">Join bill <Icon name="arrow" /></button></form></div></div>}
     </div>
   )
 }
