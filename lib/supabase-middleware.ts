@@ -29,14 +29,17 @@ export async function updateSession(request: NextRequest) {
 
   // Protected routes: redirect to login if not authenticated
   const { data } = await supabase.auth.getSession()
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
+  const isAuthPage =
+  request.nextUrl.pathname === '/login' ||
+  request.nextUrl.pathname === '/signup' ||
+  request.nextUrl.pathname === '/confirm'
   const isPublicPage =
     request.nextUrl.pathname.startsWith('/join') ||
     request.nextUrl.pathname === '/'
 
   if (!data.session && !isAuthPage && !isPublicPage) {
     // User is not logged in and is trying to access a protected page
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (data.session && isAuthPage) {

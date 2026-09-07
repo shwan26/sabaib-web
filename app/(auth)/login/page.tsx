@@ -49,65 +49,48 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Log In</h1>
-        <p className="text-gray-600 text-sm mt-1">
-          Access your bills and manage your account
-        </p>
+    <div className="auth-form-wrap">
+      <div className="auth-heading">
+        <h2>Log into your account</h2>
       </div>
 
       {error && (
-        <div className="mb-4">
+        <div className="auth-error">
           <Alert type="error" message={error} />
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="auth-form">
         <Input
           label="Email"
           type="email"
-          placeholder="you@example.com"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          containerClassName="mb-4"
+          containerClassName="auth-field"
+          className="auth-input"
         />
 
         <Input
           label="Password"
           type="password"
-          placeholder="Your password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          containerClassName="mb-6"
+          containerClassName="auth-field"
+          className="auth-input"
         />
 
-        <Button type="submit" isLoading={loading} className="w-full">
-          Log In
+        <Button type="submit" isLoading={loading} className="auth-submit">
+          Login
         </Button>
       </form>
 
-      <div className="mt-6 space-y-3">
-        <div className="text-center">
-          <Link
-            href="/auth/forgot-password"
-            className="text-sm text-blue-600 hover:text-blue-700"
-          >
-            Forgot your password?
-          </Link>
-        </div>
-
-        <div className="pt-3 border-t border-gray-200 text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              href="/auth/signup"
-              className="text-blue-600 hover:text-blue-700"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+      <div className="auth-signup-prompt">
+        <p>
+          Don&apos;t have an account?{' '}
+          <Link href="/signup">Create account</Link>
+        </p>
       </div>
     </div>
   )

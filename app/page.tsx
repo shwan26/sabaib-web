@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 
@@ -29,11 +30,17 @@ export default function HomePage() {
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🦉</span>
+            <Image
+              src="/penguin_jump.png"
+              alt="SabaiB Logo"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
             <h1 className="text-2xl font-bold text-yellow-500">SabaiB</h1>
           </div>
           <div className="flex gap-4">
-            <Link href="/auth/login">
+            <Link href="/login">
               <Button variant="secondary">Create Account</Button>
             </Link>
           </div>
@@ -65,7 +72,7 @@ export default function HomePage() {
               <p className="text-gray-600 text-sm mb-6">
                 Try a live demo bill with sample friends and dishes—no code needed.
               </p>
-              <Link href="/auth/signup">
+              <Link href="/signup">
                 <Button variant="primary" className="w-full">
                   Try the demo bill →
                 </Button>

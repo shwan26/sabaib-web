@@ -2,19 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Alert } from '@/components/Alert'
 
 export default function SignupPage() {
-  const router = useRouter()
   const supabase = createBrowserSupabaseClient()
 
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -24,13 +22,8 @@ export default function SignupPage() {
     setError('')
 
     // Validation
-    if (!email || !password || !confirmPassword) {
+    if (!name || !email || !password) {
       setError('All fields are required')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
       return
     }
 
@@ -45,6 +38,7 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { full_name: name } },
       })
 
       if (error) {
@@ -80,16 +74,16 @@ export default function SignupPage() {
 
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-sm text-gray-600 text-center mb-4">
-            Didn't receive the email?
+            Didn&apos;t receive the email?
           </p>
           <Button
             variant="secondary"
             className="w-full"
             onClick={() => {
               setSubmitted(false)
+              setName('')
               setEmail('')
               setPassword('')
-              setConfirmPassword('')
             }}
           >
             Try Another Email
@@ -98,7 +92,7 @@ export default function SignupPage() {
 
         <div className="mt-4 text-center">
           <Link
-            href="/auth/login"
+            href="/login"
             className="text-sm text-blue-600 hover:text-blue-700"
           >
             Already have an account? Log in
@@ -109,59 +103,57 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-        <p className="text-gray-600 text-sm mt-1">
-          Sign up to start creating and sharing bills
-        </p>
+    <div className="auth-form-wrap">
+      <div className="auth-heading">
+        <h2>Create your account</h2>
       </div>
 
       {error && (
-        <div className="mb-4">
+        <div className="auth-error">
           <Alert type="error" message={error} />
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="auth-form">
+        <Input
+          label="Name"
+          type="text"
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          containerClassName="auth-field"
+          className="auth-input"
+        />
+
         <Input
           label="Email"
           type="email"
-          placeholder="you@example.com"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          containerClassName="mb-4"
+          containerClassName="auth-field"
+          className="auth-input"
         />
 
         <Input
           label="Password"
           type="password"
-          placeholder="At least 8 characters"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          containerClassName="mb-4"
+          containerClassName="auth-field"
+          className="auth-input"
         />
 
-        <Input
-          label="Confirm Password"
-          type="password"
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          containerClassName="mb-6"
-        />
-
-        <Button type="submit" isLoading={loading} className="w-full">
-          Sign Up
+        <Button type="submit" isLoading={loading} className="auth-submit">
+          Create
         </Button>
       </form>
 
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+      <div className="auth-signup-prompt">
+        <p>
           Already have an account?{' '}
-          <Link href="/auth/login" className="text-blue-600 hover:text-blue-700">
-            Log in
-          </Link>
+          <Link href="/login">Login</Link>
         </p>
       </div>
     </div>

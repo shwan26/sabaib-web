@@ -30,7 +30,7 @@ export default function DashboardPage() {
         } = await supabase.auth.getUser()
 
         if (userError || !user) {
-          router.push('/auth/login')
+          router.push('/login')
           return
         }
 
@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    router.push('/auth/login')
+    router.push('/login')
     router.refresh()
   }
 

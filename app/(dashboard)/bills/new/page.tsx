@@ -96,7 +96,7 @@ export default function CreateBillPage() {
       } = await supabase.auth.getUser()
 
       if (userError || !user) {
-        router.push('/auth/login')
+        router.push('/login')
         return
       }
 
