@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <Link href="/dashboard" className="dashboard-brand"><span>SabaiB</span><span className="brand-penguin">🐧</span></Link>
         <nav className="dashboard-nav" aria-label="Dashboard navigation">
           <Link href="/dashboard" className="dashboard-nav-link active"><Icon name="home" /> <span>Home</span></Link>
-          <a href="#active-bills" className="dashboard-nav-link"><Icon name="groups" /> <span>Groups</span></a>
+          <Link href="/groups" className="dashboard-nav-link"><Icon name="groups" /> <span>Groups</span></Link>
           <button type="button" className="dashboard-nav-link" onClick={handleLogout}><Icon name="user" /> <span>Profile</span></button>
         </nav>
         <button className="dashboard-logout" onClick={handleLogout}><Icon name="logout" /> Log out</button>
