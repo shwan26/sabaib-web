@@ -36,35 +36,22 @@ export default function JoinBillPage() {
   useEffect(() => {
     const loadBill = async () => {
       try {
-        const suppliedCode = code.trim()
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(suppliedCode)
+        // Looked up via a rate-limited API route (not directly against
+        // Supabase) so guessing/brute-forcing join codes is throttled.
+        const lookupResponse = await fetch(`/api/join/${encodeURIComponent(code.trim())}`)
 
-        // A normal group code must not also be compared to the UUID `id` column:
-        // Postgres tries to cast both branches of an `or` filter, causing valid
-        // six-character codes to fail with an invalid UUID error.
-        let selectResult = await (supabase as any)
-          .from('bills')
-          .select('*')
-          .ilike('code', suppliedCode)
-          .maybeSingle()
-
-        // Preserve support for older invite links that contain a bill UUID.
-        if (!selectResult.data && !selectResult.error && isUuid) {
-          selectResult = await (supabase as any)
-            .from('bills')
-            .select('*')
-            .eq('id', suppliedCode)
-            .maybeSingle()
-        }
-
-        if (selectResult.error || !selectResult.data) {
-          if (selectResult.error) console.error('Unable to load bill', selectResult.error)
-          setError('Bill not found. Check your invite code.')
+        if (!lookupResponse.ok) {
+          if (lookupResponse.status === 429) {
+            setError('Too many attempts. Please wait a moment and try again.')
+          } else {
+            setError('Bill not found. Check your invite code.')
+          }
           setLoading(false)
           return
         }
 
-        const data = selectResult.data as Bill
+        const { bill: fetchedBill } = (await lookupResponse.json()) as { bill: Bill }
+        const data = fetchedBill
 
         // Check if bill is settled
         if (data.settled_at) {

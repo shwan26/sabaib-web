@@ -16,11 +16,11 @@ type ReceiptItemInsert = Database['public']['Tables']['receipt_items']['Insert']
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 function generateBillCode(): string {
-  let code = ''
-  for (let i = 0; i < 6; i++) {
-    code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]
-  }
-  return code
+  // Use the Web Crypto CSPRNG rather than Math.random(), which is not
+  // designed to be unpredictable and shouldn't back an access-control token.
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('')
 }
 
 interface ReceiptItem {

@@ -59,6 +59,14 @@ export default function HomePage() {
           </div>
         </aside>
       </section>
+
+      <footer className="home-footer">
+        <p>&copy; {new Date().getFullYear()} SabaiB. All rights reserved.</p>
+        <nav className="home-footer-nav" aria-label="Legal">
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
+        </nav>
+      </footer>
     </main>
   )
 }

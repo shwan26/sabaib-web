@@ -22,6 +22,7 @@ function SignupForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -38,6 +39,11 @@ function SignupForm() {
 
     if (password.length < 8) {
       setError('Password must be at least 8 characters')
+      return
+    }
+
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy')
       return
     }
 
@@ -160,7 +166,24 @@ function SignupForm() {
           className="auth-input"
         />
 
-        <Button type="submit" isLoading={loading} className="auth-submit">
+        <label className="auth-consent">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+          />
+          <span>
+            I agree to the <Link href="/terms">Terms of Service</Link> and{' '}
+            <Link href="/privacy">Privacy Policy</Link>.
+          </span>
+        </label>
+
+        <Button
+          type="submit"
+          isLoading={loading}
+          disabled={!agreedToTerms}
+          className="auth-submit"
+        >
           Create
         </Button>
       </form>
