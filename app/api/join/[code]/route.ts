@@ -39,7 +39,15 @@ export async function GET(request: NextRequest, ctx: RouteContext<'/api/join/[co
     result = await supabase.from('bills').select('*').eq('id', suppliedCode).maybeSingle()
   }
 
-  if (result.error || !result.data) {
+  if (result.error) {
+    console.error('Join bill lookup failed:', result.error)
+    return NextResponse.json(
+      { error: 'Unable to look up this bill right now.' },
+      { status: 500 }
+    )
+  }
+
+  if (!result.data) {
     return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
   }
 

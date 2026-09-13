@@ -87,6 +87,7 @@ export type Database = {
           guest_token_hash: string | null
           has_paid: boolean
           paid_at: string | null
+          selected_item_ids: string[]
         }
         Insert: {
           id?: string
@@ -99,6 +100,7 @@ export type Database = {
           guest_token_hash?: string | null
           has_paid?: boolean
           paid_at?: string | null
+          selected_item_ids?: string[]
         }
         Update: {
           id?: string
@@ -111,6 +113,7 @@ export type Database = {
           guest_token_hash?: string | null
           has_paid?: boolean
           paid_at?: string | null
+          selected_item_ids?: string[]
         }
       }
       receipt_items: {
