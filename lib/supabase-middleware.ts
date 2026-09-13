@@ -35,6 +35,7 @@ export async function updateSession(request: NextRequest) {
   request.nextUrl.pathname === '/confirm'
   const isPublicPage =
     request.nextUrl.pathname.startsWith('/join') ||
+    request.nextUrl.pathname.startsWith('/bills/') ||
     request.nextUrl.pathname === '/'
 
   if (!data.session && !isAuthPage && !isPublicPage) {
@@ -43,8 +44,14 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (data.session && isAuthPage) {
-    // User is logged in and trying to access auth pages, redirect to dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    // User is logged in and trying to access auth pages; honor a same-site
+    // redirect target (e.g. back to a join link) if one was supplied.
+    const redirectParam = request.nextUrl.searchParams.get('redirect')
+    const redirectTo =
+      redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+        ? redirectParam
+        : '/dashboard'
+    return NextResponse.redirect(new URL(redirectTo, request.url))
   }
 
   return supabaseResponse

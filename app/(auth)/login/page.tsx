@@ -1,16 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Alert } from '@/components/Alert'
 
-export default function LoginPage() {
+// Only follow the redirect param back into the app, never off-site.
+function safeRedirect(target: string | null): string {
+  if (target && target.startsWith('/') && !target.startsWith('//')) return target
+  return '/dashboard'
+}
+
+function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createBrowserSupabaseClient()
+  const redirectTo = safeRedirect(searchParams.get('redirect'))
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,7 +45,7 @@ export default function LoginPage() {
       if (error) {
         setError(error.message)
       } else {
-        router.push('/dashboard')
+        router.push(redirectTo)
         router.refresh()
       }
     } catch (err) {
@@ -89,9 +97,35 @@ export default function LoginPage() {
       <div className="auth-signup-prompt">
         <p>
           Don&apos;t have an account?{' '}
-          <Link href="/signup">Create account</Link>
+          <Link
+            href={
+              redirectTo !== '/dashboard'
+                ? `/signup?redirect=${encodeURIComponent(redirectTo)}`
+                : '/signup'
+            }
+          >
+            Create account
+          </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+function LoginFallback() {
+  return (
+    <div className="auth-form-wrap">
+      <div className="auth-heading">
+        <h2>Log into your account</h2>
+      </div>
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
   )
 }

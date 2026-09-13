@@ -1,14 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Input } from '@/components/Input'
 import { Alert } from '@/components/Alert'
 
-export default function SignupPage() {
+// Only follow the redirect param back into the app, never off-site.
+function safeRedirect(target: string | null): string {
+  if (target && target.startsWith('/') && !target.startsWith('//')) return target
+  return '/dashboard'
+}
+
+function SignupForm() {
   const supabase = createBrowserSupabaseClient()
+  const searchParams = useSearchParams()
+  const redirectTo = safeRedirect(searchParams.get('redirect'))
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -38,7 +47,13 @@ export default function SignupPage() {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: name } },
+        options: {
+          data: { full_name: name },
+          emailRedirectTo:
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/confirm?redirect=${encodeURIComponent(redirectTo)}`
+              : undefined,
+        },
       })
 
       if (error) {
@@ -153,9 +168,35 @@ export default function SignupPage() {
       <div className="auth-signup-prompt">
         <p>
           Already have an account?{' '}
-          <Link href="/login">Login</Link>
+          <Link
+            href={
+              redirectTo !== '/dashboard'
+                ? `/login?redirect=${encodeURIComponent(redirectTo)}`
+                : '/login'
+            }
+          >
+            Login
+          </Link>
         </p>
       </div>
     </div>
+  )
+}
+
+function SignupFallback() {
+  return (
+    <div className="auth-form-wrap">
+      <div className="auth-heading">
+        <h2>Create your account</h2>
+      </div>
+    </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<SignupFallback />}>
+      <SignupForm />
+    </Suspense>
   )
 }

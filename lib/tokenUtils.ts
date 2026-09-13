@@ -49,3 +49,21 @@ export function clearGuestToken(billId: string): void {
     localStorage.removeItem(`guest_token_${billId}`)
   }
 }
+
+/**
+ * Remember which participant row this browser joined a bill as, so a guest
+ * reopening the bill (or the join link) on the same device is recognized
+ * instead of joining a second time.
+ */
+export function storeGuestParticipantId(billId: string, participantId: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`guest_participant_${billId}`, participantId)
+  }
+}
+
+export function getGuestParticipantId(billId: string): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(`guest_participant_${billId}`)
+  }
+  return null
+}

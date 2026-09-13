@@ -50,18 +50,41 @@ export default function DashboardPage() {
 
         setUserName(user.email?.split('@')[0] || 'User')
 
-        // Load user's bills
-        const { data, error: billsError } = await supabase
+        // Load bills the user owns, plus bills they joined as a participant
+        // (from any device, since joined participants are linked by user_id).
+        const ownedResult = await supabase
           .from('bills')
           .select('*')
           .eq('owner_id', user.id)
           .order('created_at', { ascending: false })
 
-        if (billsError) {
+        const joinedResult = await (supabase as any)
+          .from('participants')
+          .select('bills(*)')
+          .eq('user_id', user.id)
+
+        if (ownedResult.error) {
           setError('Failed to load bills')
-          console.error(billsError)
+          console.error(ownedResult.error)
         } else {
-          setBills(data || [])
+          const ownedBills = (ownedResult.data || []) as Bill[]
+          const joinedBills: Bill[] = joinedResult.error
+            ? []
+            : ((joinedResult.data as any[]) || [])
+                .map((row) => row.bills)
+                .filter((b): b is Bill => Boolean(b))
+
+          if (joinedResult.error) console.error(joinedResult.error)
+
+          const byId = new Map<string, Bill>()
+          for (const b of ownedBills) byId.set(b.id, b)
+          for (const b of joinedBills) if (!byId.has(b.id)) byId.set(b.id, b)
+
+          setBills(
+            Array.from(byId.values()).sort(
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            )
+          )
         }
       } catch (err) {
         setError('An error occurred')

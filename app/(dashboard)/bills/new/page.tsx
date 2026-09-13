@@ -12,6 +12,17 @@ import type { Database } from '@/lib/database.types'
 type BillInsert = Database['public']['Tables']['bills']['Insert']
 type ReceiptItemInsert = Database['public']['Tables']['receipt_items']['Insert']
 
+// Excludes visually ambiguous characters (0/O, 1/I) so codes are easy to read aloud/type.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+function generateBillCode(): string {
+  let code = ''
+  for (let i = 0; i < 6; i++) {
+    code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]
+  }
+  return code
+}
+
 interface ReceiptItem {
   id: string
   name: string
@@ -100,26 +111,33 @@ export default function CreateBillPage() {
         return
       }
 
-      // Create bill with calculated totals
-      const billInsertData = {
-        owner_id: user.id,
-        restaurant_name: restaurantName,
-        currency,
-        subtotal,
-        vat_percent: parseFloat(vatPercent),
-        vat_amount: vat,
-        service_charge_percent: parseFloat(serviceChargePercent),
-        service_charge_amount: serviceCharge,
-        total_amount: total,
-        status: 'waiting' as const,
-        stage: 'waiting' as const,
-      }
+      // Create bill with calculated totals. Retry on the rare invite-code
+      // collision (unique constraint violation, Postgres error code 23505).
+      let insertResult: any
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const billInsertData = {
+          owner_id: user.id,
+          code: generateBillCode(),
+          restaurant_name: restaurantName,
+          currency,
+          subtotal,
+          vat_percent: parseFloat(vatPercent),
+          vat_amount: vat,
+          service_charge_percent: parseFloat(serviceChargePercent),
+          service_charge_amount: serviceCharge,
+          total_amount: total,
+          status: 'waiting' as const,
+          stage: 'waiting' as const,
+        }
 
-      const insertResult = await (supabase as any)
-        .from('bills')
-        .insert(billInsertData as any)
-        .select()
-        .single()
+        insertResult = await (supabase as any)
+          .from('bills')
+          .insert(billInsertData as any)
+          .select()
+          .single()
+
+        if (!insertResult.error || insertResult.error.code !== '23505') break
+      }
 
       if (insertResult.error) {
         setError('Failed to create bill: ' + insertResult.error.message)
@@ -129,6 +147,20 @@ export default function CreateBillPage() {
       }
 
       const newBill = insertResult.data as Database['public']['Tables']['bills']['Row']
+
+      // Add the host as a participant so they show up in the split/payment list too.
+      const hostParticipantResult = await (supabase as any).from('participants').insert([
+        {
+          bill_id: newBill.id,
+          user_id: user.id,
+          name: user.email?.split('@')[0] || 'Host',
+          role: 'host',
+        },
+      ])
+
+      if (hostParticipantResult.error) {
+        console.error(hostParticipantResult.error)
+      }
 
       // Add receipt items
       const itemsInsertData = items.map((item) => ({

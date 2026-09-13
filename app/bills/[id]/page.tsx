@@ -7,6 +7,7 @@ import { createBrowserSupabaseClient } from '@/lib/supabase'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
 import { Alert } from '@/components/Alert'
+import { getGuestParticipantId } from '@/lib/tokenUtils'
 import type { Database } from '@/lib/database.types'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -25,6 +26,10 @@ export default function BillDetailPage() {
   const [error, setError] = useState('')
   const [copyNotification, setCopyNotification] = useState(false)
   const [isHost, setIsHost] = useState(false)
+  const [myParticipantId, setMyParticipantId] = useState<string | null>(null)
+  const [qrUploading, setQrUploading] = useState(false)
+  const [qrError, setQrError] = useState('')
+  const [markingPaid, setMarkingPaid] = useState(false)
 
   useEffect(() => {
     const loadBillData = async () => {
@@ -70,7 +75,21 @@ export default function BillDetailPage() {
         if (participantsResult.error) {
           console.error(participantsResult.error)
         } else {
-          setParticipants((participantsResult.data as Participant[]) || [])
+          const loadedParticipants = (participantsResult.data as Participant[]) || []
+          setParticipants(loadedParticipants)
+
+          // Work out which row is "me": a signed-in account is matched by
+          // user_id (works from any device); a guest is matched by the
+          // participant id remembered in this browser's localStorage.
+          if (user) {
+            const mine = loadedParticipants.find((p) => p.user_id === user.id)
+            setMyParticipantId(mine?.id ?? null)
+          } else {
+            const guestId = getGuestParticipantId(billId)
+            if (guestId && loadedParticipants.some((p) => p.id === guestId)) {
+              setMyParticipantId(guestId)
+            }
+          }
         }
       } catch (err) {
         setError('An error occurred')
@@ -141,6 +160,77 @@ export default function BillDetailPage() {
     } catch (err) {
       setError('Failed to copy link')
       console.error(err)
+    }
+  }
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !bill) return
+
+    setQrError('')
+    setQrUploading(true)
+
+    try {
+      const extension = file.name.split('.').pop() || 'png'
+      const path = `${bill.id}/${Date.now()}.${extension}`
+
+      const uploadResult = await supabase.storage
+        .from('payment-qr')
+        .upload(path, file, { upsert: true })
+
+      if (uploadResult.error) {
+        setQrError('Failed to upload QR code: ' + uploadResult.error.message)
+        return
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('payment-qr').getPublicUrl(path)
+
+      const updateResult = await (supabase as any)
+        .from('bills')
+        .update({ promptpay_qr_path: publicUrlData.publicUrl })
+        .eq('id', bill.id)
+
+      if (updateResult.error) {
+        setQrError('Uploaded, but failed to save it to the bill: ' + updateResult.error.message)
+        return
+      }
+
+      setBill({ ...bill, promptpay_qr_path: publicUrlData.publicUrl })
+    } catch (err) {
+      setQrError('An error occurred while uploading the QR code.')
+      console.error(err)
+    } finally {
+      setQrUploading(false)
+    }
+  }
+
+  const markAsPaid = async () => {
+    if (!myParticipantId) return
+
+    setMarkingPaid(true)
+    try {
+      const updateResult = await (supabase as any)
+        .from('participants')
+        .update({ has_paid: true, paid_at: new Date().toISOString() })
+        .eq('id', myParticipantId)
+
+      if (updateResult.error) {
+        setError('Failed to update payment status: ' + updateResult.error.message)
+        console.error(updateResult.error)
+        return
+      }
+
+      setParticipants((prev) =>
+        prev.map((p) =>
+          p.id === myParticipantId ? { ...p, has_paid: true, paid_at: new Date().toISOString() } : p
+        )
+      )
+    } catch (err) {
+      setError('An error occurred while updating payment status.')
+      console.error(err)
+    } finally {
+      setMarkingPaid(false)
     }
   }
 
@@ -254,6 +344,93 @@ export default function BillDetailPage() {
         )}
       </Card>
 
+      {/* Payment Card */}
+      <Card className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Payment</h2>
+
+        {(() => {
+          const shareAmount = bill.is_split_evenly
+            ? bill.total_amount / Math.max(participants.length, 1)
+            : bill.total_amount
+          const paidCount = participants.filter((p) => p.has_paid).length
+          const myParticipant = participants.find((p) => p.id === myParticipantId)
+
+          return (
+            <>
+              <div className="flex justify-between items-center bg-gray-50 rounded-lg p-4 mb-4">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {bill.is_split_evenly ? 'Your share (split evenly)' : 'Amount due'}
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {shareAmount.toFixed(2)} {bill.currency}
+                  </p>
+                  {!bill.is_split_evenly && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      This bill isn&apos;t split evenly yet — check with the host for your exact amount.
+                    </p>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600">
+                  {paidCount} of {participants.length} paid
+                </p>
+              </div>
+
+              {bill.promptpay_qr_path ? (
+                <div className="text-center mb-4">
+                  {/* External/storage image URL, not part of the Next.js build */}
+                  <img
+                    src={bill.promptpay_qr_path}
+                    alt="PromptPay QR code"
+                    className="mx-auto max-w-[240px] rounded-lg border border-gray-200"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Scan with your banking app to pay the host
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 mb-4">
+                  {isHost
+                    ? 'Upload a PromptPay QR code below so guests can pay you.'
+                    : "The host hasn't added a payment QR code yet."}
+                </p>
+              )}
+
+              {isHost && (
+                <div className="mb-4">
+                  <label className="inline-block px-4 py-2 text-sm font-medium text-blue-600 border-2 border-blue-600 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
+                    {qrUploading
+                      ? 'Uploading...'
+                      : bill.promptpay_qr_path
+                        ? 'Replace QR Code'
+                        : 'Upload QR Code'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQrUpload}
+                      disabled={qrUploading}
+                      className="hidden"
+                    />
+                  </label>
+                  {qrError && <p className="text-sm text-red-600 mt-2">{qrError}</p>}
+                </div>
+              )}
+
+              {myParticipant && !myParticipant.has_paid && (
+                <Button onClick={markAsPaid} isLoading={markingPaid} className="w-full">
+                  I&apos;ve Paid
+                </Button>
+              )}
+              {myParticipant?.has_paid && (
+                <p className="text-center text-green-600 font-semibold">
+                  ✓ You&apos;ve marked this as paid
+                </p>
+              )}
+            </>
+          )
+        })()}
+      </Card>
+
       {/* Participants */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
@@ -293,11 +470,18 @@ export default function BillDetailPage() {
                       </p>
                     </div>
                   </div>
-                  {participant.is_ready && (
-                    <span className="text-green-600 text-sm font-semibold">
-                      ✓ Ready
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {participant.has_paid && (
+                      <span className="text-green-600 text-sm font-semibold">
+                        ✓ Paid
+                      </span>
+                    )}
+                    {participant.is_ready && (
+                      <span className="text-green-600 text-sm font-semibold">
+                        ✓ Ready
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Card>
             ))}

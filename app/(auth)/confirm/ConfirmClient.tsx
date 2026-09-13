@@ -34,9 +34,14 @@ export default function ConfirmClient() {
           setError(error.message)
         } else {
           setSuccess(true)
-          // Redirect to dashboard after 2 seconds
+          const redirectParam = searchParams.get('redirect')
+          const redirectTo =
+            redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
+              ? redirectParam
+              : '/dashboard'
+          // Redirect after 2 seconds
           setTimeout(() => {
-            router.push('/dashboard')
+            router.push(redirectTo)
             router.refresh()
           }, 2000)
         }
