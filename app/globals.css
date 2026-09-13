@@ -218,6 +218,18 @@ body {
   text-underline-offset: 2px;
 }
 
+.auth-forgot-link {
+  margin-top: -14px;
+  text-align: right;
+  font-size: 0.75rem;
+}
+
+.auth-forgot-link a {
+  color: var(--sabai-navy);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .auth-consent {
   display: flex;
   align-items: flex-start;

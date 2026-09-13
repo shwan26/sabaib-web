@@ -89,6 +89,10 @@ function LoginForm() {
           className="auth-input"
         />
 
+        <div className="auth-forgot-link">
+          <Link href="/forgot-password">Forgot password?</Link>
+        </div>
+
         <Button type="submit" isLoading={loading} className="auth-submit">
           Login
         </Button>

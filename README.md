@@ -35,3 +35,10 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 # sabaib-web
+
+## Password reset setup
+
+Password recovery sends users to `/reset-password`. Add the local and deployed reset routes to Supabase Dashboard under Authentication > URL Configuration > Redirect URLs:
+
+- `http://localhost:3000/reset-password`
+- `https://your-domain.example/reset-password`

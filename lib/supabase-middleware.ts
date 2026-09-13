@@ -32,7 +32,10 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage =
   request.nextUrl.pathname === '/login' ||
   request.nextUrl.pathname === '/signup' ||
-  request.nextUrl.pathname === '/confirm'
+  request.nextUrl.pathname === '/confirm' ||
+  request.nextUrl.pathname === '/forgot-password' ||
+  request.nextUrl.pathname === '/reset-password'
+  const isResetPasswordPage = request.nextUrl.pathname === '/reset-password'
   const isPublicPage =
     request.nextUrl.pathname.startsWith('/join') ||
     request.nextUrl.pathname.startsWith('/bills/') ||
@@ -45,7 +48,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (data.session && isAuthPage) {
+  if (data.session && isAuthPage && !isResetPasswordPage) {
     // User is logged in and trying to access auth pages; honor a same-site
     // redirect target (e.g. back to a join link) if one was supplied.
     const redirectParam = request.nextUrl.searchParams.get('redirect')
