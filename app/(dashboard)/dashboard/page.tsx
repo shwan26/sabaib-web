@@ -33,7 +33,6 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState('')
   const [joinOpen, setJoinOpen] = useState(false)
   const [joinCode, setJoinCode] = useState('')
-  const [deletingAccount, setDeletingAccount] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -104,30 +103,6 @@ export default function DashboardPage() {
     router.refresh()
   }
 
-  const handleDeleteAccount = async () => {
-    if (deletingAccount || !window.confirm('Delete your account and all bills you own? This cannot be undone.')) return
-
-    setDeletingAccount(true)
-    setError('')
-    try {
-      const response = await fetch('/api/account', { method: 'DELETE' })
-      const result = (await response.json()) as { error?: string }
-
-      if (!response.ok) {
-        setError(result.error || 'Could not delete your account.')
-        return
-      }
-
-      router.push('/')
-      router.refresh()
-    } catch (err) {
-      console.error(err)
-      setError('Could not delete your account. Please try again.')
-    } finally {
-      setDeletingAccount(false)
-    }
-  }
-
   const joinBill = (event: React.FormEvent) => {
     event.preventDefault()
     const code = joinCode.trim()
@@ -150,7 +125,7 @@ export default function DashboardPage() {
         <nav className="dashboard-nav" aria-label="Dashboard navigation">
           <Link href="/dashboard" className="dashboard-nav-link active"><Icon name="home" /> <span>Home</span></Link>
           <Link href="/groups" className="dashboard-nav-link"><Icon name="groups" /> <span>Groups</span></Link>
-          <button type="button" className="dashboard-nav-link" onClick={handleDeleteAccount} disabled={deletingAccount}><Icon name="user" /> <span>{deletingAccount ? 'Deleting...' : 'Delete account'}</span></button>
+          <Link href="/delete-account" className="dashboard-nav-link"><Icon name="user" /> <span>Delete account</span></Link>
         </nav>
         <button className="dashboard-logout" onClick={handleLogout}><Icon name="logout" /> Log out</button>
       </aside>

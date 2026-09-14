@@ -65,6 +65,7 @@ export default function HomePage() {
         <nav className="home-footer-nav" aria-label="Legal">
           <a href="/privacy">Privacy Policy</a>
           <a href="/terms">Terms of Service</a>
+          <a href="/account-deletion">Delete Account</a>
         </nav>
       </footer>
     </main>

@@ -44,7 +44,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/bills/') ||
     request.nextUrl.pathname === '/' ||
     request.nextUrl.pathname === '/privacy' ||
-    request.nextUrl.pathname === '/terms'
+    request.nextUrl.pathname === '/terms' ||
+    request.nextUrl.pathname === '/account-deletion'
 
   if (!data.session && !isAuthPage && !isPublicPage) {
     // User is not logged in and is trying to access a protected page
