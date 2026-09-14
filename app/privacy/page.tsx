@@ -46,6 +46,12 @@ export default function PrivacyPolicyPage() {
                 to invite others.
               </li>
               <li>
+                <strong>Receipt images:</strong> if you scan or upload a receipt to auto-fill a
+                bill, the image is sent to Google&apos;s Gemini API to extract items and prices
+                and, where needed, translate Thai text to English. We use the extracted data to
+                populate your bill.
+              </li>
+              <li>
                 <strong>Usage data:</strong> if you accept our cookie banner, we use Google
                 Analytics to understand how the Service is used (e.g. pages visited, general
                 usage patterns). This only runs after you consent.
@@ -78,8 +84,9 @@ export default function PrivacyPolicyPage() {
               </li>
               <li>
                 <strong>With service providers:</strong> we use Supabase to host our database and
-                handle authentication, and Google Analytics for usage analytics. These providers
-                process data on our behalf and are bound to protect it.
+                handle authentication, Google&apos;s Gemini API to scan and translate receipt
+                images you choose to upload, and Google Analytics for usage analytics. These
+                providers process data on our behalf and are bound to protect it.
               </li>
               <li>
                 <strong>For legal reasons:</strong> if required to comply with applicable law,

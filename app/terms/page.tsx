@@ -38,7 +38,9 @@ export default function TermsOfServicePage() {
               SabaiB lets you create bills, add items and prices, invite others to a bill or
               group using a join code, and split costs between participants. SabaiB is a tool for
               tracking and splitting amounts — it does not move money between users (see
-              &ldquo;Payments&rdquo; below).
+              &ldquo;Payments&rdquo; below). If you choose to scan or upload a receipt, SabaiB
+              uses Google&apos;s Gemini API to extract items and prices from the image and, where
+              needed, translate Thai text to English to help fill in your bill.
             </p>
           </section>
 
@@ -99,7 +101,10 @@ export default function TermsOfServicePage() {
               The Service is provided &ldquo;as is&rdquo; and &ldquo;as available&rdquo;, without
               warranties of any kind, express or implied. We do not guarantee the Service will be
               uninterrupted, error-free, or that bill calculations will be free of user input
-              errors.
+              errors. Receipt scanning and Thai-to-English translation are performed by AI
+              (Google&apos;s Gemini API) and may misread or mistranslate items, prices, or text;
+              you are responsible for reviewing and correcting extracted data before relying on
+              it.
             </p>
           </section>
 
