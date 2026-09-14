@@ -10,6 +10,7 @@ import { Input } from '@/components/Input'
 export default function ForgotPasswordPage() {
   const supabase = createBrowserSupabaseClient()
   const [email, setEmail] = useState('')
+  const [submittedEmail, setSubmittedEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
@@ -29,13 +30,14 @@ export default function ForgotPasswordPage() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.trim(),
         {
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${window.location.origin}/auth/confirm?next=/update-password`,
         }
       )
 
       if (resetError) {
         setError(resetError.message)
       } else {
+        setSubmittedEmail(email.trim())
         setSubmitted(true)
       }
     } catch (requestError) {
@@ -55,7 +57,7 @@ export default function ForgotPasswordPage() {
 
         <Alert
           type="success"
-          message="If an account exists for that email, we sent a password reset link. Check your inbox and follow the link to choose a new password."
+          message={`If an account exists for ${submittedEmail}, we sent a password reset link. Check your inbox and follow the link to choose a new password.`}
         />
 
         <div className="auth-signup-prompt">

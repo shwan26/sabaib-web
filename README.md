@@ -38,7 +38,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ## Password reset setup
 
-Password recovery sends users to `/reset-password`. Add the local and deployed reset routes to Supabase Dashboard under Authentication > URL Configuration > Redirect URLs:
+Password recovery sends users to `/auth/confirm?next=/update-password`, which exchanges the recovery token for a session and then forwards to `/update-password`. Add the local and deployed confirm routes to Supabase Dashboard under Authentication > URL Configuration > Redirect URLs:
 
-- `http://localhost:3000/reset-password`
-- `https://your-domain.example/reset-password`
+- `http://localhost:3000/auth/confirm`
+- `https://your-domain.example/auth/confirm`
+
+Also make sure the Dashboard's **Site URL** has no trailing slash (`https://your-domain.example`, not `https://your-domain.example/`) — a trailing slash gets concatenated with the email template's leading `/auth/confirm`, producing a `//auth/confirm` link that won't match any route.

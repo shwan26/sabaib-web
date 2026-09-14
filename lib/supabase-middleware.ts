@@ -33,9 +33,12 @@ export async function updateSession(request: NextRequest) {
   request.nextUrl.pathname === '/login' ||
   request.nextUrl.pathname === '/signup' ||
   request.nextUrl.pathname === '/confirm' ||
+  request.nextUrl.pathname === '/auth/confirm' ||
   request.nextUrl.pathname === '/forgot-password' ||
   request.nextUrl.pathname === '/reset-password'
-  const isResetPasswordPage = request.nextUrl.pathname === '/reset-password'
+  const isResetPasswordPage =
+    request.nextUrl.pathname === '/reset-password' ||
+    request.nextUrl.pathname === '/auth/confirm'
   const isPublicPage =
     request.nextUrl.pathname.startsWith('/join') ||
     request.nextUrl.pathname.startsWith('/bills/') ||

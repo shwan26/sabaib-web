@@ -224,6 +224,7 @@ export default function BillDetailPage() {
                 })}
               </div>
               <p className="split-helper">Tap the dishes you had. Your choices are saved as you go.</p>
+              <h2 className="receipt-items-heading">Receipt items</h2>
               <div className="item-list">
                 {items.length === 0 ? <p className="empty-split">No receipt items have been added yet.</p> : items.map((item, index) => {
                   const claimedBy = participants.filter((participant) => participant.selected_item_ids?.includes(item.id))

@@ -15,6 +15,7 @@ function ResetPasswordForm() {
   const [updating, setUpdating] = useState(false)
   const [ready, setReady] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
@@ -24,6 +25,9 @@ function ResetPasswordForm() {
 
     const resolveRecoverySession = async () => {
       const code = searchParams.get('code')
+      const hashParams = new URLSearchParams(window.location.hash.slice(1))
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
 
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
@@ -37,6 +41,21 @@ function ResetPasswordForm() {
         }
       }
 
+      if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+
+        if (sessionError) {
+          if (active) {
+            setError(sessionError.message)
+            setLoading(false)
+          }
+          return
+        }
+      }
+
       const { data, error: sessionError } = await supabase.auth.getSession()
 
       if (!active) return
@@ -44,6 +63,7 @@ function ResetPasswordForm() {
       if (sessionError) {
         setError(sessionError.message)
       } else if (data.session) {
+        setEmail(data.session.user.email ?? '')
         setReady(true)
       } else {
         setError('This password reset link is invalid or has expired.')
@@ -57,6 +77,7 @@ function ResetPasswordForm() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active || event !== 'PASSWORD_RECOVERY') return
 
+      setEmail(session?.user.email ?? '')
       setReady(Boolean(session))
       setError(session ? '' : 'This password reset link is invalid or has expired.')
       setLoading(false)
@@ -163,6 +184,17 @@ function ResetPasswordForm() {
       )}
 
       <form onSubmit={handleSubmit} className="auth-form">
+        {email && (
+          <Input
+            label="Account"
+            type="email"
+            value={email}
+            disabled
+            containerClassName="auth-field"
+            className="auth-input"
+          />
+        )}
+
         <Input
           label="New password"
           type="password"

@@ -13,32 +13,46 @@ export default function ConfirmClient() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [email, setEmail] = useState('')
 
   useEffect(() => {
     const handleConfirmation = async () => {
       try {
-        // Get the code from URL hash or query params
-        const code =
-          searchParams.get('code') || window.location.hash.substring(1)
+        const tokenHash = searchParams.get('token_hash')
+        const verificationType = searchParams.get('type')
+        const code = searchParams.get('code')
+        const hashParams = new URLSearchParams(window.location.hash.slice(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
 
-        if (!code) {
+        if (!tokenHash && !code && !(accessToken && refreshToken)) {
           setError('No confirmation code found in URL')
           setLoading(false)
           return
         }
 
-        // Exchange code for session
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data, error } = tokenHash
+          ? await supabase.auth.verifyOtp({
+              token_hash: tokenHash,
+              type: verificationType === 'recovery' ? 'recovery' : 'email',
+            })
+          : code
+            ? await supabase.auth.exchangeCodeForSession(code)
+            : await supabase.auth.setSession({
+                access_token: accessToken!,
+                refresh_token: refreshToken!,
+              })
 
         if (error) {
           setError(error.message)
         } else {
+          setEmail(data.user?.email ?? data.session?.user?.email ?? '')
           setSuccess(true)
-          const redirectParam = searchParams.get('redirect')
+          const redirectParam = searchParams.get('next') || searchParams.get('redirect')
           const redirectTo =
             redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('//')
               ? redirectParam
-              : '/dashboard'
+              : verificationType === 'recovery' ? '/update-password' : '/dashboard'
           // Redirect after 2 seconds
           setTimeout(() => {
             router.push(redirectTo)
@@ -71,7 +85,11 @@ export default function ConfirmClient() {
         <Alert
           type="success"
           title="Email Confirmed!"
-          message="Your account has been successfully verified. Redirecting to your dashboard..."
+          message={
+            email
+              ? `Confirmed ${email}. Redirecting...`
+              : 'Your account has been successfully verified. Redirecting...'
+          }
         />
       </div>
     )
